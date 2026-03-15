@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>DUI Mixing</title>
+  <style>
+    body{ margin:0; background: transparent; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; }
+    .wrap{
+      width:100vw; height:100vh;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .card{
+      width: 860px;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(10,12,18,.65);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 18px 60px rgba(0,0,0,.55);
+      overflow:hidden;
+    }
+    .top{
+      padding: 16px 18px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      border-bottom:1px solid rgba(255,255,255,.12);
+      background: linear-gradient(90deg, rgba(124,58,237,.20), rgba(34,197,94,.10));
+      color: rgba(233,238,252,.95);
+      font-weight: 850;
+      letter-spacing:.6px;
+      text-transform: uppercase;
+    }
+    .mid{
+      padding: 16px 18px;
+      display:grid;
+      grid-template-columns: 1fr 90px 1fr;
+      gap: 14px;
+      align-items:center;
+      color: rgba(233,238,252,.95);
+    }
+    .slot{
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.22);
+      padding: 14px;
+      min-height: 110px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+    }
+    .slot .k{ font-size: 12px; color: rgba(233,238,252,.65); text-transform: uppercase; letter-spacing:.5px; }
+    .slot .v{ font-size: 20px; font-weight: 900; margin-top: 6px; }
+    .arrow{
+      font-size: 42px; text-align:center;
+      color: rgba(233,238,252,.75);
+    }
+    .small{ font-size: 12px; color: rgba(233,238,252,.70); margin-top: 6px; }
+    .bot{
+      padding: 14px 18px;
+      display:flex;
+      justify-content:space-between;
+      border-top:1px solid rgba(255,255,255,.12);
+      color: rgba(233,238,252,.70);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="top">
+        <div>Mixing Station</div>
+        <div id="time">—</div>
+      </div>
+      <div class="mid">
+        <div class="slot">
+          <div class="k">Product</div>
+          <div class="v" id="prod">—</div>
+          <div class="small" id="prodInfo">Waiting…</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="slot">
+          <div class="k">Result</div>
+          <div class="v" id="out">Pick a recipe</div>
+          <div class="small" id="outInfo">Open the station with [E] to mix.</div>
+        </div>
+      </div>
+      <div class="bot">
+        <div>MySQL-based • No Inventory</div>
+        <div>Az-Schedule1 DUI</div>
+      </div>
+    </div>
+  </div>
+  <script src="dui.js"></script>
+</body>
+</html>

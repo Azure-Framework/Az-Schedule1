@@ -1,0 +1,263 @@
+const RES = (window.GetParentResourceName && GetParentResourceName()) || "az-schedule1";
+
+const elApp   = document.getElementById("app");
+const elTitle = document.getElementById("title");
+const elBtnClose = document.getElementById("btnClose");
+
+function hardHide(){
+  elApp?.classList.add("hidden");
+  document.body.classList.remove("open");
+  hideAll();
+}
+function hardShow(){
+  elApp?.classList.remove("hidden");
+  document.body.classList.add("open");
+}
+
+
+// views (match index.html IDs)
+const views = {
+  shop: document.getElementById("viewShop"),
+  plant: document.getElementById("viewPlant"),
+  bag: document.getElementById("viewBag"),
+  mix: document.getElementById("viewMix"),
+  plant_sidebar: document.getElementById("viewPlantSidebar"),
+  bag_scene: document.getElementById("viewBagScene"),
+  inventory: document.getElementById("viewInventory"),
+};
+
+function hideAll(){
+  Object.values(views).forEach(v => v && v.classList.add("hidden"));
+}
+function show(name){
+  hideAll();
+  const v = views[name];
+  if (v) v.classList.remove("hidden");
+}
+
+async function post(name, data){
+  const url = `https://${RES}/${name}`;
+  return fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json; charset=UTF-8" },
+    body: JSON.stringify(data || {})
+  }).catch((e)=> {
+    console.warn("NUI post failed", name, e);
+    return null;
+  });
+}
+
+// --------------------------------------------------
+// State
+// --------------------------------------------------
+let state = {
+  context: null,
+  payload: {},
+  player: null,
+};
+
+function pct(n){
+  n = Number(n || 0);
+  if (Number.isNaN(n)) n = 0;
+  return Math.max(0, Math.min(100, n));
+}
+
+function setOpen(open){
+  if (open){
+    elApp?.classList.remove("hidden");
+  } else {
+    elApp?.classList.add("hidden");
+    hideAll();
+  }
+}
+
+// --------------------------------------------------
+// SHOP
+// --------------------------------------------------
+const shopGrid = document.getElementById("shopGrid");
+const shopPlaceRow = document.getElementById("shopPlaceRow");
+
+function renderShop(payload){
+  if (!shopGrid) return; // safety
+
+  const items = payload.items || {};
+  shopGrid.innerHTML = "";
+
+  Object.entries(items).forEach(([k, v]) => {
+    const el = document.createElement("div");
+    el.className = "item";
+
+    const priceTxt = (v.price && payload.moneySystem !== "none") ? ` ($${v.price})` : "";
+    el.innerHTML = `
+      <div class="name">${v.label || k}</div>
+      <div class="desc">${v.desc || ""}</div>
+      <button class="btn primary">Buy${priceTxt}</button>
+    `;
+
+    el.querySelector("button").onclick = () => post("shop_buy", { item: k });
+    shopGrid.appendChild(el);
+  });
+
+  // placement buttons row (optional)
+  if (payload.canPlace) shopPlaceRow?.classList.remove("hidden");
+  else shopPlaceRow?.classList.add("hidden");
+}
+
+document.getElementById("btnPlacePot")?.addEventListener("click", () => post("place_start", { kind: "pots" }));
+document.getElementById("btnPlaceLamp")?.addEventListener("click", () => post("place_start", { kind: "lamps" }));
+document.getElementById("btnPlaceTable")?.addEventListener("click", () => post("place_start", { kind: "tables" }));
+
+// --------------------------------------------------
+// PLANT SIDEBAR
+// --------------------------------------------------
+const waterFill = document.getElementById("waterFill");
+const fertFill  = document.getElementById("fertFill");
+const growthFill= document.getElementById("growthFill");
+const waterPct  = document.getElementById("waterPct");
+const fertPct   = document.getElementById("fertPct");
+const growthStage = document.getElementById("growthStage");
+const seedSelect = document.getElementById("seedSelect");
+const plantSeedBox = document.getElementById("plantSeedBox");
+
+const btnWater = document.getElementById("btnWater");
+const btnFert  = document.getElementById("btnFert");
+const btnTrim  = document.getElementById("btnTrim");
+const btnHarvest = document.getElementById("btnHarvest");
+const btnPlantSeed = document.getElementById("btnPlantSeed");
+const btnClosePlant = document.getElementById("btnClosePlant");
+
+function renderPlantSidebar(payload){
+  const pot = payload.pot || {};
+  const potId = payload.potId;
+
+  const w = pct(pot.water);
+  const f = pct(pot.fert);
+  const g = pct(pot.growth);
+
+  if (waterFill) waterFill.style.width = `${w}%`;
+  if (fertFill)  fertFill.style.width  = `${f}%`;
+  if (growthFill)growthFill.style.width= `${g}%`;
+
+  if (waterPct) waterPct.textContent = `${w.toFixed(1)}%`;
+  if (fertPct)  fertPct.textContent  = `${f.toFixed(1)}%`;
+  if (growthStage) growthStage.textContent = `${g.toFixed(0)}%`;
+
+  btnWater && (btnWater.onclick = () => post("pot_water", { potId }));
+  btnFert && (btnFert.onclick = () => post("pot_fert", { potId }));
+  btnTrim && (btnTrim.onclick = () => post("pot_trim", { potId }));
+  btnHarvest && (btnHarvest.onclick = () => post("pot_harvest", { potId }));
+  btnClosePlant && (btnClosePlant.onclick = () => post("close", {}));
+
+  const seeds = payload.seeds || {};
+  const strains = payload.strains || {};
+
+  if (!pot.strain && !pot.dead){
+    plantSeedBox?.classList.remove("hidden");
+    if (seedSelect){
+      seedSelect.innerHTML = "";
+      Object.entries(seeds).forEach(([k, c]) => {
+        if (Number(c) <= 0) return;
+        const opt = document.createElement("option");
+        opt.value = k;
+        opt.textContent = `${(strains[k] && strains[k].label) || k} (x${c})`;
+        seedSelect.appendChild(opt);
+      });
+    }
+    btnPlantSeed && (btnPlantSeed.onclick = () => {
+      const strainKey = seedSelect?.value;
+      if (!strainKey) return;
+      post("pot_plant", { potId, strainKey });
+    });
+  } else {
+    plantSeedBox?.classList.add("hidden");
+  }
+}
+
+// --------------------------------------------------
+// BAG SCENE mouse forwarding (3D props handled client-side)
+// --------------------------------------------------
+const btnBagClose = document.getElementById("btnBagClose");
+btnBagClose?.addEventListener("click", () => post("bag_close", {}));
+
+let mouseDown = false;
+window.addEventListener("mousedown", (e) => {
+  if (state.context !== "bag_scene") return;
+  mouseDown = true;
+  post("mouse", { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight, down: true, action: "pick" });
+});
+window.addEventListener("mouseup", (e) => {
+  if (state.context !== "bag_scene") return;
+  mouseDown = false;
+  post("mouse", { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight, down: false, action: "drop" });
+});
+window.addEventListener("mousemove", (e) => {
+  if (state.context !== "bag_scene") return;
+  post("mouse", { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight, down: mouseDown });
+});
+
+// --------------------------------------------------
+// Generic close
+// --------------------------------------------------
+elBtnClose?.addEventListener("click", () => {
+  hardHide();
+  post("close", {});
+});
+document.addEventListener("keydown", (e)=>{
+  if (e.key === "Escape"){
+    hardHide();
+    post("close", {});
+  }
+});
+
+// --------------------------------------------------
+// Messages from client
+// --------------------------------------------------
+window.addEventListener("message", (e) => {
+  const msg = e.data || {};
+  const action = msg.action;
+  const data = msg.data || {};
+
+  if (action === "open"){
+    state.context = data.context;
+    hardShow();
+    state.payload = data.payload || {};
+    state.player = (data.payload && data.payload.player) || state.player;
+    setOpen(true);
+
+    // title
+    if (elTitle){
+      const t = (state.context || "Schedule1").replace("_", " ");
+      elTitle.textContent = t.toUpperCase();
+    }
+
+    show(state.context);
+
+    if (state.context === "shop") renderShop(state.payload);
+    if (state.context === "plant_sidebar") renderPlantSidebar(state.payload);
+    if (state.context === "inventory") renderInventory({ player: state.player || (state.payload && state.payload.player) || {}, strains: (state.payload && state.payload.strains) || {} });
+    // bag_scene overlay has no additional render needed
+  }
+
+  if (action === "close"){
+    state.context = null;
+    state.payload = {};
+    hardHide();
+  }
+
+  if (action === "player"){
+    state.player = data || {};
+    // live refresh inventory counts when a purchase/sync happens
+    if (state.context === "inventory"){
+      renderInventory({ player: state.player, strains: (state.payload && state.payload.strains) || {} });
+    }
+  }
+
+  if (action === "pot_update"){
+    if (state.context === "plant_sidebar"){
+      state.payload.pot = data;
+      renderPlantSidebar(state.payload);
+    }
+  }
+});
+
+

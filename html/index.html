@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Az Schedule1</title>
+  <style>
+    :root{
+      --bg:#04070d;
+      --bg2:#07121c;
+      --card:rgba(8,14,22,.92);
+      --cardSoft:rgba(12,20,31,.86);
+      --cardLite:rgba(255,255,255,.045);
+      --border:rgba(56,188,120,.16);
+      --borderStrong:rgba(56,188,120,.28);
+      --text:rgba(245,249,255,.95);
+      --muted:rgba(179,196,216,.72);
+      --accent:#2fcb77;
+      --accentSoft:rgba(47,203,119,.18);
+      --green:#29d17f;
+      --greenSoft:rgba(41,209,127,.16);
+      --danger:#ff5d5d;
+      --dangerSoft:rgba(255,93,93,.12);
+      --shadow:0 24px 70px rgba(0,0,0,.42);
+      --r:20px;
+    }
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; width:100%; height:100%; background:transparent; color:var(--text); font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
+    .hidden{ display:none !important; }
+    body.open #app{ pointer-events:auto; }
+    #app{ position:fixed; inset:0; pointer-events:none; }
+    #backdrop{ position:absolute; inset:0; background:linear-gradient(180deg, rgba(3,8,14,.35), rgba(3,8,14,.18)); }
+
+    #panel{
+      position:absolute; left:50%; top:14px; transform:translateX(-50%);
+      width:min(1240px, calc(100vw - 28px)); height:min(860px, calc(100vh - 28px)); max-height:calc(100vh - 28px);
+      border-radius:26px; border:1px solid var(--borderStrong);
+      background:radial-gradient(circle at 15% 18%, rgba(47,203,119,.13), transparent 26%), linear-gradient(180deg, rgba(7,14,24,.97), rgba(5,10,18,.96));
+      box-shadow:var(--shadow); overflow:hidden; display:flex; flex-direction:column;
+    }
+    .browserbar{ display:flex; align-items:center; gap:16px; padding:14px 18px 12px; border-bottom:1px solid rgba(255,255,255,.05); }
+    .chromeDots{ display:flex; gap:10px; }
+    .chromeDots span{ width:12px; height:12px; border-radius:999px; background:rgba(255,255,255,.16); box-shadow:inset 0 0 0 1px rgba(255,255,255,.05); }
+    .chromeDots span:nth-child(1){ background:#f87171; } .chromeDots span:nth-child(2){ background:#fbbf24; } .chromeDots span:nth-child(3){ background:#34d399; }
+    .addressbar{ flex:1; height:42px; border-radius:999px; border:1px solid var(--border); background:rgba(3,8,14,.55); display:flex; align-items:center; justify-content:center; color:rgba(214,227,244,.78); font-size:14px; font-weight:700; letter-spacing:.02em; }
+    .browserActions{ display:flex; gap:10px; }
+    .browserActions span{ width:32px; height:32px; border-radius:12px; border:1px solid var(--border); background:rgba(255,255,255,.03); }
+
+    .topbar{ display:flex; align-items:flex-start; justify-content:space-between; padding:18px 20px 16px; }
+    .brandCol{ display:grid; gap:2px; }
+    .eyebrow{ color:var(--accent); font-size:13px; letter-spacing:.22em; font-weight:900; text-transform:uppercase; }
+    .brand{ font-size:42px; line-height:1; font-weight:1000; letter-spacing:.02em; }
+    #title{ color:var(--muted); font-size:15px; font-weight:800; letter-spacing:.02em; text-transform:none; }
+    .topMeta{ display:grid; gap:6px; justify-items:end; text-align:right; }
+    .topMeta .heading{ font-size:18px; font-weight:950; text-transform:uppercase; }
+    .topMeta .sub{ color:var(--muted); max-width:360px; font-size:14px; line-height:1.3; }
+    .topMeta .actions{ display:flex; gap:10px; align-items:center; }
+
+    .tabs{ display:flex; gap:10px; padding:0 18px 14px; }
+    .tab{ padding:12px 18px; border:1px solid var(--border); border-radius:999px; color:var(--muted); cursor:pointer; user-select:none; font-weight:900; font-size:14px; background:rgba(255,255,255,.025); transition:.15s ease; }
+    .tab.active{ color:var(--text); border-color:color-mix(in srgb, var(--accent) 46%, transparent); background:color-mix(in srgb, var(--accent) 12%, transparent); box-shadow:inset 0 0 0 1px rgba(255,255,255,.03); }
+
+    .content{ flex:1; min-height:0; padding:0 18px 18px; overflow:auto; overscroll-behavior:contain; }
+    .sectionGrid{ display:grid; grid-template-columns:1.2fr .8fr; gap:18px; align-items:start; margin-bottom:16px; }
+    .sectionCard{ border:1px solid var(--border); border-radius:24px; background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.02)); padding:16px; }
+    .sectionCard .sectionTitle{ font-size:18px; font-weight:950; text-transform:uppercase; }
+    .sectionCard .sectionSub{ color:var(--muted); margin-top:4px; font-size:14px; }
+    .toolbar{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; margin-top:14px; }
+    .toolbar .group{ display:flex; gap:10px; flex-wrap:wrap; }
+    .searchFake, .selectFake{ min-height:48px; border-radius:999px; border:1px solid var(--border); background:rgba(4,9,15,.56); padding:0 18px; display:flex; align-items:center; color:var(--muted); font-weight:700; }
+    .selectFake{ min-width:180px; justify-content:space-between; }
+
+    .grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+    .item, .marketCard{ border:1px solid var(--border); border-radius:22px; background:linear-gradient(180deg, rgba(18,29,43,.70), rgba(7,12,21,.88)); box-shadow:inset 0 1px 0 rgba(255,255,255,.04); overflow:hidden; }
+    .item::before, .marketCard::before{ content:""; display:block; height:118px; background:radial-gradient(circle at 30% 20%, rgba(47,203,119,.20), transparent 42%), linear-gradient(180deg, rgba(255,255,255,.02), transparent); border-bottom:1px solid rgba(255,255,255,.04); }
+    .itemInner, .marketInner{ padding:14px; }
+    .item .name, .marketCard .name{ font-weight:1000; font-size:16px; text-transform:uppercase; letter-spacing:.04em; }
+    .item .desc, .marketMeta{ color:var(--muted); font-size:13px; margin-top:6px; min-height:34px; }
+    .marketMeta{ min-height:auto; }
+    .priceLine{ display:flex; justify-content:space-between; align-items:center; margin-top:14px; gap:12px; font-weight:900; }
+    .priceLine .price{ font-size:15px; }
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .pill{ display:flex; justify-content:space-between; gap:10px; padding:10px 14px; min-height:44px; border-radius:999px; border:1px solid var(--border); background:rgba(255,255,255,.035); color:var(--text); font-weight:900; }
+    .pill.tight{ padding:7px 12px; min-height:unset; }
+    .mini{ color:var(--muted); font-weight:800; }
+    .stack{ display:grid; gap:12px; }
+
+    .btn{ border:1px solid var(--border); border-radius:14px; padding:11px 14px; background:rgba(255,255,255,.04); color:var(--text); cursor:pointer; font-weight:950; letter-spacing:.02em; transition:.15s ease; }
+    .btn:hover{ transform:translateY(-1px); }
+    .btn.primary{ border-color:rgba(47,203,119,.42); background:rgba(47,203,119,.14); }
+    .btn.good{ border-color:rgba(41,209,127,.42); background:rgba(41,209,127,.14); }
+    .btn.danger{ border-color:rgba(255,93,93,.42); background:rgba(255,93,93,.10); }
+    .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
+
+    .inventoryGroups{ display:grid; gap:14px; }
+    .chipWrap{ display:flex; gap:10px; flex-wrap:wrap; }
+    .chipAction{ display:flex; align-items:center; gap:8px; padding-right:8px; }
+    .chipAction .btn{ margin:0; padding:7px 10px; border-radius:999px; }
+
+    #viewPlantSidebar, #viewBagScene{ position:absolute; top:18px; width:360px; border-radius:22px; border:1px solid var(--borderStrong); background:linear-gradient(180deg, rgba(7,14,24,.95), rgba(5,10,18,.94)); box-shadow:var(--shadow); overflow:hidden; }
+    #viewPlantSidebar{ left:18px; }
+    #viewBagScene{ right:18px; width:390px; }
+    .ps-head{ padding:14px 14px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); background:linear-gradient(90deg, rgba(47,203,119,.18), rgba(41,209,127,.10)); font-weight:950; text-transform:uppercase; letter-spacing:.06em; }
+    .ps-body{ padding:14px; }
+    .metric{ margin-bottom:14px; }
+    .metric .top{ display:flex; justify-content:space-between; align-items:center; font-weight:900; }
+    .metric .top span:last-child{ color:var(--muted); }
+    .bar{ border:1px solid var(--border); background:rgba(255,255,255,.04); height:12px; border-radius:999px; overflow:hidden; margin-top:6px; }
+    .bar > div{ height:100%; width:0%; background:rgba(47,203,119,.78); }
+    #fertFill{ background:rgba(255,191,71,.72); }
+    #growthFill{ background:rgba(41,209,127,.72); }
+    .actions{ display:grid; grid-template-columns:1fr; gap:8px; margin-top:10px; }
+    .seedBox{ margin-top:12px; border:1px solid var(--border); border-radius:16px; background:rgba(255,255,255,.03); padding:12px; }
+    select{ width:100%; padding:12px; border-radius:14px; border:1px solid var(--border); background:rgba(0,0,0,.25); color:var(--text); font-weight:800; outline:none; margin:8px 0; }
+
+    .marketSection{ display:grid; gap:14px; }
+    .marketGrid{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; }
+    .marketEmpty{ padding:18px; border-radius:18px; border:1px dashed var(--border); color:var(--muted); text-align:center; }
+
+    .content::-webkit-scrollbar{ width:10px; }
+    .content::-webkit-scrollbar-track{ background:rgba(255,255,255,.03); border-radius:999px; }
+    .content::-webkit-scrollbar-thumb{ background:rgba(47,203,119,.35); border-radius:999px; }
+
+    @media (max-width: 980px){
+      .grid, .marketGrid{ grid-template-columns:1fr; }
+      .sectionGrid{ grid-template-columns:1fr; }
+      #panel{ width:min(100vw - 18px, 980px); height:calc(100vh - 18px); max-height:calc(100vh - 18px); }
+    }
+    body.mode-plant #panel, body.mode-plant #backdrop, body.mode-bag #panel, body.mode-bag #backdrop{ display:none !important; }
+  </style>
+</head>
+<body>
+  <div id="app" class="hidden">
+    <div id="backdrop" class="hidden"></div>
+
+
+    <div id="panel" class="hidden">
+      <div class="browserbar">
+        <div class="chromeDots"><span></span><span></span><span></span></div>
+        <div class="addressbar">www.sa-herbalexchange.net</div>
+        <div class="browserActions"><span></span><span></span></div>
+      </div>
+      <div class="topbar">
+        <div class="brandCol">
+          <div class="brand">SAN ANDREAS</div>
+          <div class="eyebrow">Herbal Exchange</div>
+          <div id="title">Supply marketplace</div>
+        </div>
+        <div class="topMeta">
+          <div class="heading">Distribution Service</div>
+          <div class="sub">Buy supplies, review your stock, or broker loose and packaged product through one lore-friendly panel.</div>
+          <div class="actions">
+            <button id="btnClose" class="btn danger">Close</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div id="tabShop" class="tab active">Supply</div>
+        <div id="tabInv" class="tab">Inventory</div>
+        <div id="tabMarket" class="tab">Broker</div>
+      </div>
+
+      <div class="content">
+
+        <div id="viewShop">
+          <div class="sectionGrid">
+            <div class="sectionCard">
+              <div class="sectionTitle">Featured supplies</div>
+              <div class="sectionSub">Core gear for the grow, prep, and bagging loop.</div>
+              <div class="toolbar">
+                <div class="group">
+                  <div class="pill tight"><span>Featured</span><span class="mini">Live</span></div>
+                  <div class="pill tight"><span>Grow</span><span class="mini">Pots / Seeds</span></div>
+                  <div class="pill tight"><span>Prep</span><span class="mini">Water / Fert</span></div>
+                  <div class="pill tight"><span>Bagging</span><span class="mini">Table / Bags</span></div>
+                </div>
+                <div class="group">
+                  <div class="searchFake">Search supply name...</div>
+                </div>
+              </div>
+            </div>
+            <div class="sectionCard">
+              <div class="sectionTitle">Quick actions</div>
+              <div class="sectionSub">Drop placed furniture straight from your stash when you are stocked.</div>
+              <div id="shopPlaceRow" class="stack hidden" style="margin-top:14px;">
+                <button id="btnPlacePot" class="btn primary">Place Pot</button>
+                <button id="btnPlaceLamp" class="btn primary">Place Lamp</button>
+                <button id="btnPlaceTable" class="btn primary">Place Bag Table</button>
+              </div>
+            </div>
+          </div>
+          <div id="shopGrid" class="grid"></div>
+        </div>
+
+
+        <div id="viewInventory" class="hidden">
+          <div class="sectionGrid" style="margin-bottom:14px;">
+            <div class="sectionCard">
+              <div class="sectionTitle">Inventory overview</div>
+              <div class="sectionSub">Every item currently tied to your grow and bagging loop.</div>
+              <div class="row" style="margin-top:14px;">
+                <div class="pill"><span>Pots</span><span class="mini" id="invPots">0</span></div>
+                <div class="pill"><span>Lamps</span><span class="mini" id="invLamps">0</span></div>
+                <div class="pill"><span>Tables</span><span class="mini" id="invTables">0</span></div>
+                <div class="pill"><span>Dirt</span><span class="mini" id="invDirt">0</span></div>
+                <div class="pill"><span>Fert</span><span class="mini" id="invFert">0</span></div>
+                <div class="pill"><span>Water</span><span class="mini" id="invWateringCan">0</span></div>
+                <div class="pill"><span>Trimmers</span><span class="mini" id="invTrimmers">0</span></div>
+                <div class="pill"><span>Bags</span><span class="mini" id="invBags">0</span></div>
+              </div>
+            </div>
+            <div class="sectionCard">
+              <div class="sectionTitle">Deploy placeables</div>
+              <div class="sectionSub">Use placeables directly from this panel.</div>
+              <div class="stack" style="margin-top:14px;">
+                <button id="usePot" class="btn primary">Use Pot</button>
+                <button id="useLamp" class="btn primary">Use Lamp</button>
+                <button id="useTable" class="btn primary">Use Table</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="inventoryGroups">
+            <div class="item"><div class="itemInner">
+              <div class="name">Seeds</div>
+              <div id="invSeeds" class="chipWrap" style="margin-top:8px;"></div>
+            </div></div>
+
+            <div class="item"><div class="itemInner">
+              <div class="name">Loose Buds</div>
+              <div id="invBuds" class="chipWrap" style="margin-top:8px;"></div>
+            </div></div>
+
+            <div class="item"><div class="itemInner">
+              <div class="name">Bagged Product</div>
+              <div id="invBagged" class="chipWrap" style="margin-top:8px;"></div>
+            </div></div>
+          </div>
+        </div>
+
+        <div id="viewMarket" class="hidden">
+          <div class="sectionGrid">
+            <div class="sectionCard">
+              <div class="sectionTitle">Broker board</div>
+              <div class="sectionSub">Move loose buds or packaged product for cash with simple one-click sales.</div>
+              <div class="toolbar">
+                <div class="group">
+                  <div class="pill tight"><span>Bagged</span><span class="mini">Best price</span></div>
+                  <div class="pill tight"><span>Loose Buds</span><span class="mini">Quick flip</span></div>
+                </div>
+                <div class="group">
+                  <div class="searchFake" id="marketBalance">Broker wallet ready</div>
+                </div>
+              </div>
+            </div>
+            <div class="sectionCard">
+              <div class="sectionTitle">Sales notes</div>
+              <div class="sectionSub">Packaged product pays more than loose buds. Use the bagging table to maximize return.</div>
+            </div>
+          </div>
+          <div class="marketSection">
+            <div>
+              <div class="sectionCard" style="margin-bottom:14px;">
+                <div class="sectionTitle">Bagged listings</div>
+                <div class="sectionSub">Higher-value packaged product ready for sale.</div>
+              </div>
+              <div id="marketBagged" class="marketGrid"></div>
+            </div>
+            <div>
+              <div class="sectionCard" style="margin:18px 0 14px;">
+                <div class="sectionTitle">Loose bud listings</div>
+                <div class="sectionSub">Fast lower-value sales when you do not want to package first.</div>
+              </div>
+              <div id="marketBuds" class="marketGrid"></div>
+            </div>
+          </div>
+        </div>
+
+
+        <div id="viewMix" class="hidden"></div>
+      </div>
+    </div>
+
+
+    <div id="viewPlantSidebar" class="hidden">
+      <div class="ps-head">
+        <div>Plant</div>
+        <button id="btnClosePlant" class="btn danger" style="padding:8px 10px;border-radius:12px;">X</button>
+      </div>
+      <div class="ps-body">
+        <div class="metric">
+          <div class="top"><span>Water</span><span id="waterPct">0%</span></div>
+          <div class="bar"><div id="waterFill"></div></div>
+          <div class="actions">
+            <button id="btnWater" class="btn primary">Water Plant</button>
+          </div>
+        </div>
+
+        <div class="metric">
+          <div class="top"><span>Fertilizer</span><span id="fertPct">0%</span></div>
+          <div class="bar"><div id="fertFill"></div></div>
+          <div class="actions">
+            <button id="btnFert" class="btn primary">Fertilize Plant</button>
+          </div>
+        </div>
+
+        <div class="metric">
+          <div class="top"><span>Growth</span><span id="growthStage">0%</span></div>
+          <div class="bar"><div id="growthFill"></div></div>
+        </div>
+
+        <div class="actions">
+          <button id="btnAddDirt" class="btn primary hidden">Add Dirt</button>
+          <button id="btnTrim" class="btn primary">Trim</button>
+          <button id="btnHarvest" class="btn primary">Harvest</button>
+        </div>
+
+        <div id="plantSeedBox" class="seedBox hidden">
+          <div style="font-weight:950; letter-spacing:.4px; text-transform:uppercase;">Plant Seed</div>
+          <select id="seedSelect"></select>
+          <button id="btnPlantSeed" class="btn primary" style="width:100%;">Plant</button>
+        </div>
+      </div>
+    </div>
+
+
+    <div id="viewBagScene" class="hidden">
+      <div class="ps-head">
+        <div>Bagging Loadout</div>
+        <button id="btnBagClose" class="btn danger" style="padding:8px 10px;border-radius:12px;">X</button>
+      </div>
+      <div class="ps-body" style="display:grid; gap:12px;">
+        <div class="item" style="padding:10px;">
+          <div class="name" style="margin-bottom:6px;">Select what to place on the table</div>
+          <div class="desc" id="bagSetupHint" style="min-height:auto;">Pick the exact buds and empty bags you want to use, then click Load Selected.</div>
+          <div class="row" style="margin-top:8px; gap:8px;">
+            <div class="pill"><span>Bud Slots</span><span class="mini" id="bagMaxBudSlots">0</span></div>
+            <div class="pill"><span>Bag Slots</span><span class="mini" id="bagMaxBagSlots">0</span></div>
+          </div>
+        </div>
+
+        <div class="item" style="padding:10px;">
+          <div class="name" style="margin-bottom:8px;">Empty Bags</div>
+          <div class="row" style="justify-content:space-between; align-items:center;">
+            <div class="mini">Available: <span id="bagAvailableBags">0</span></div>
+            <div class="row" style="gap:6px;">
+              <button id="bagMinus" class="btn" style="padding:8px 10px;">-</button>
+              <div class="pill"><span>Use</span><span class="mini" id="bagSelectedBags">0</span></div>
+              <button id="bagPlus" class="btn primary" style="padding:8px 10px;">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="item" style="padding:10px;">
+          <div class="name" style="margin-bottom:8px;">Bud Selection</div>
+          <div id="bagBudList" style="display:grid; gap:8px;"></div>
+        </div>
+
+        <div class="row" style="gap:8px;">
+          <button id="btnBagResetSelection" class="btn" style="flex:1;">Reset</button>
+          <button id="btnBagLoadSelection" class="btn primary" style="flex:1;">Load Selected</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
